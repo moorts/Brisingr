@@ -2,13 +2,13 @@ from Utils.numbers import *
 from decimal import *
 from Crypto.Util.number import long_to_bytes
 
-getcontext().prec = 1000
 
 ### Wiener attack ###
 # e: Public exponent
 # n: Public modulus
 # ct: Ciphertext (as long)
-def wiener_attack(e, n, ct):
+def wiener_attack(e, n, ct, prec=1000):
+    getcontext().prec = prec
     attack(Decimal(e), Decimal(n), ct)
 
 def attack(e, n, ct):
