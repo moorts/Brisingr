@@ -1,3 +1,20 @@
+from decimal import *
+getcontext().prec = 1000
+
+def cube_root(x): 
+    d1 = Decimal(1)
+    d2 = Decimal(2)
+    d3 = Decimal(3)
+
+    x0 = (x-d1)/d3
+    xn = (d2 * x0 + x / Decimal(x0*x0) ) / d3
+
+    while xn != x0:
+        x0 = xn
+        xn = (d2 * x0 + x / Decimal(x0*x0) ) / d3
+
+    return xn
+
 def convergents(e):
     n = [] # Nominators
     d = [] # Denominators
