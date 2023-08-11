@@ -60,8 +60,8 @@ def isqrt(n: int) -> int:
     >>> isqrt(1000000 ** 2)
     1000000
     """
-    if n == 0:
-        return 0
+    if n <= 1:
+        return n
 
     # ref: https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Rough_estimation
     x = 2 ** ((n.bit_length() + 1) // 2)
