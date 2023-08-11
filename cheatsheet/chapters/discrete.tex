@@ -1,0 +1,53 @@
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../cryptography"
+%%% End:
+
+\chapter{Discrete Logarithms}
+
+\section{Baby-step giant-step}
+
+\begin{algorithm}[H]
+  \caption{Shanks's Babystep-Giantstep Algorithm}
+  \begin{algorithmic}
+   \Require $g^x = b$
+   \State $n \gets 1 + \floor{\sqrt{N}}$ 
+   \State $b \gets \{e, g, g^2, \dots, g^n\}$
+   \For $j \in \{0,1,\dots,n\}$
+     \State $\text{table}[g^j] = j$
+   \EndFor
+   \State $\gamma \gets b$
+   \ForAll{$i \in \{0,1,\dots,n\}$}
+     \If{$\gamma \in \text{table}$}
+       \State \textbf{return} $in + \text{table}[\gamma]$
+     \Else
+       \State $\gamma \gets \gamma \cdot g^{-n}$
+     \EndIf
+   \EndFor
+     
+  \end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Correctness}
+
+To prove that we always find a solution we need to show that there is always a match.
+
+\begin{proof}
+  We rewrite $x$ as follows:
+  \[ x = nq + r, 0 \leq r < n \]
+  We can solve for q and since $n > \sqrt{N}$ we obtain:
+  \[ q = \frac{x-r}{n} < \frac{N}{n} < \frac{N}{\sqrt{N}} = \sqrt{N} < n \]
+  Rewriting the discrete logarithm we get:
+  \[ g^r = b\cdot g^{-nq} \]
+  And since $0 \leq r < n$, $g^r$ is in the babysteps and because $q < n$, $-nq < -n^2$, so $b\cdot g^{-nq}$ is in the giant steps, therefore we always find a solution.
+  
+\end{proof}
+
+\subsubsection{Time/Space Complexity}
+Since we have $\mathcal{O}(1)$ lookup into the hashtable we have time complexity $\mathcal{O}(n) = \mathcal{O}(\sqrt{n})$. This consists of $2n$ modular exponentiations and $n$ hash table inserts and lookups respectively.
+
+Regarding space, we have a hash table storing $n + 1$ elements, therefore we have $\mathcal{O}(\sqrt{n})$ space complexity.
+
+\section{Pohlig-Hellman Algorithm}
+\section{Index Calculus Algorithm}
