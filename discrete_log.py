@@ -1,5 +1,5 @@
 import math
-from typing import Optional
+from typing import Optional, Callable
 
 def baby_step_giant_step(g: int, h: int, p: int, N=None) -> int:
     """
@@ -83,9 +83,51 @@ def solve_congruence_system(rhs, moduli):
         increment *= modulus
     return solution % increment
 
+def naive_factorize(n: int) -> [int]:
+    """Brute force the prime factorization of n
+    """
+    x = n
+    factorization = []
+    for i in range(2, n):
+        if x == 1:
+            break
+        exp = 0
+        while x % i == 0:
+            exp += 1
+            x //= i
+        if exp > 0:
+            factorization.append((i, exp))
+    return factorization
+            
 
-def pohlig_hellman(g: int, h: int, p: int) -> int:
-    pass
+
+def pohlig_hellman(g: int, h: int, p: int, factorize: Callable[[int], int]) -> int:
+    """Solve the discrete logarithm problem by the pohlig-hellman algorithm
+
+    Args:
+        g: base of the discrete log
+        h: right-hand side value
+        p: Order of the finite field
+        factorize: routine to factorize the order of the multiplicative group of the field
+
+    Returns:
+        Solution x to g^x = h (mod p)
+    """
+    factors = factorize(p-1)
+
+    rhs = []
+    moduli = []
+    for (q, e) in factors:
+        order = pow(q, e)
+        g_q = pow(g, (p-1) // order, p)
+        h_q = pow(h, (p-1) // order, p)
+        rhs.append(prime_power_pohlig_hellman(g_q, h_q, p, q, e))
+        moduli.append(order)
+
+    x = solve_congruence_system(rhs, moduli)
+    assert(pow(g, x, p) == h)
+
+    return x
 
 g = 9704
 h = 13896
@@ -93,3 +135,5 @@ p = 17389
 #print(baby_step_giant_step(g,h,p))
 print(prime_power_pohlig_hellman(5448, 6909, 11251, 5, 4))
 print(solve_congruence_system([2,3,4], [3,7,16]))
+
+print(pohlig_hellman(23, 9689, 11251, naive_factorize))
