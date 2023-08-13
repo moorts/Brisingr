@@ -10,6 +10,8 @@
 %\usepackage{newpxtext}
 %usepackage{newpxmath}
 \usepackage{lmodern}
+\usepackage[x11names]{xcolor}
+\usepackage{sectsty}
 
 \usepackage{algorithm}
 \usepackage{algpseudocode}
@@ -39,10 +41,11 @@
 \usepackage{chngcntr}\counterwithout{section}{chapter}
 
 %\renewcommand{\thesection}{\S\arabic {section}}
-\titleformat{\chapter}[hang]{\normalfont\huge\bfseries}{\chaptertitlename\ \thechapter}{1em}{}
-\titleformat{\section}[hang]{\Large\scshape}{§\;\thesection}{1em}{}
-\titleformat{\subsection}[hang]{\large\scshape}{§\;\thesubsection}{1em}{}
+\titleformat{\chapter}[hang]{\normalfont\huge\bfseries\color{MediumPurple2}}{\chaptertitlename\ \thechapter}{1em}{}
+\titleformat{\section}[hang]{\Large\scshape\color{MediumPurple2}}{§\;\thesection}{1em}{}
+\titleformat{\subsection}[hang]{\large\scshape\color{MediumPurple2}}{§\;\thesubsection}{1em}{}
 \titleformat{\subsubsection}[hang]{\scshape}{\thesubsubsection}{1em}{}
+
 
 \DeclareMathOperator{\lcm}{lcm}
 
@@ -60,6 +63,7 @@
 
 \include{chapters/background.tex}
 \include{chapters/discrete.tex}
+\include{chapters/factorization.tex}
 \include{chapters/RSA.tex}
 
 
