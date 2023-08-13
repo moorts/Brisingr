@@ -2,6 +2,7 @@ from Utils.numbers import *
 from decimal import *
 from Crypto.Util.number import long_to_bytes
 from typing import Optional
+import math
 
 ### Wiener attack ###
 # e: Public exponent
