@@ -4,6 +4,8 @@ from typing import Callable
 def xor(a, b):
     return bytes([x ^ y for x, y in zip(a, b)])
 
+def oracle() -> bool:
+    raise Exception("Oracle not implemented")
 
 def padding_oracle_attack(oracle: Callable[[bytes], bool], ct: bytes, block_size: int):
     num_blocks = len(ct) // block_size

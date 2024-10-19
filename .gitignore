@@ -3,3 +3,4 @@
 /docs/*.aux
 *.toc
 *.aux
+*.sage.py
