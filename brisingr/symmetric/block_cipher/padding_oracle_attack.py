@@ -16,8 +16,12 @@ def padding_oracle_attack(oracle: Callable[[bytes], bool], ct: bytes, block_size
     blocks = [ct[i*block_size:(i+1)*block_size] for i in range(num_blocks)]
 
     pt = b""
+    decrypted_blocks = 0
 
     for c0, c1 in zip(blocks, blocks[1:]):
+        print(f"[Status] Decrypting block {decrypted_blocks+1}.")
+        print("[Status] Progress: 0/16, Plaintext: ", end="\r", flush=True)
+
         pt_block = b""
 
         for byte in range(1, block_size + 1):
@@ -38,6 +42,12 @@ def padding_oracle_attack(oracle: Callable[[bytes], bool], ct: bytes, block_size
                                 pad_value = i - 1
                                 break
                     pt_block = bytes([pad_value ^ candidate]) + pt_block
+
+                    print(f"[Status] Progress: {len(pt_block)}/16, Plaintext: {xor(pt_block, c0[-byte:])}", end="\r", flush=True)
                     break
-        pt += pt_block
+        print(f"[Status] Progress: 16/16, Plaintext: {xor(pt_block, c0)}")
+        print(xor(pt_block, c0))
+
+        pt += xor(pt_block, c0)
+        decrypted_blocks += 1
     return pt
