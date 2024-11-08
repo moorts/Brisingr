@@ -42,7 +42,7 @@ def untwist_single_value(y: int) -> int:
     partial_y = y
     
     # Unfurl original y 4 bits at a time
-    for i in range(4):
+    for _ in range(4):
         partial_y = (y ^ ((partial_y << 7) & 0x9d2c5680))
 
     y = partial_y
@@ -81,7 +81,7 @@ def untwist_test():
 
     other = untwist(outputs)
 
-    for i in range(2000):
+    for _ in range(2000):
         assert mt.getrandbits(32) == other.getrandbits(32)
 
 
