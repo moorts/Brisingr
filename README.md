@@ -2,15 +2,32 @@
 
 ## Dependencies
 - pycryptodome (managed by uv)
-- sagemath (manager by you)
+- sagemath (managed by you)
 
-## RSA attacks
+## Elliptic Curves (`brisingr/curves`)
 
-`rsa_attacks.py`
+- TwistedEdwardsCurves
 
-* Wiener Attack at `brisingr.rsa
+## RSA (`brisingr/rsa`)
 
-## Utils
+Implemented attacks:
+- Franklin-Reiter related message attack.
+- Coppersmith's short-pad attack
+- Wiener's Attack
+
+## PRNGs (`brisingr/prngs`)
+
+- Mersenne Twister
+
+## Symmetric Ciphers (`brisingr/symmetric`)
+
+Implemented Attacks:
+- `brisingr/symmetric/block_cipher`
+  - Padding Oracle
+- `brisingr/symmetric/block_cipher`
+  - Data structure for keeping track of impossible bytes.
+
+## Utils (`brisingr/Utils`)
 
 ### Numbers
 
