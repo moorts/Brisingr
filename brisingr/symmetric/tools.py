@@ -9,24 +9,26 @@ def index_of_coincidence(text, ALPHABET=string.ascii_lowercase):
 
     See: https://en.wikipedia.org/wiki/Index_of_coincidence.
     """
-    text = list(filter(lambda c: c in ALPHABET, text))
     frequencies = Counter(text).values()
     N = len(text)
     c = len(ALPHABET)
 
     return c * sum(freq*(freq - 1)/(N*(N-1)) for freq in frequencies)
 
-def find_period(ct, THRESHOLD=1.7):
-    for period in range(1, len(ct) + 1):
+def find_period(ct, BASE_IOC=1.73, ALPHABET=string.ascii_lowercase):
+    ct = list(filter(lambda c: c in ALPHABET, ct))
+    deviations = []
+    for period in range(1, 10):
         ioc = 0
         for i in range(period):
             same_key = []
             for j in range(len(ct) // period):
                 same_key.append(ct[j*period + i])
-            ioc += index_of_coincidence(same_key)/period
-        print(period, ioc)
-        if ioc > THRESHOLD:
-            return period
+            ioc += index_of_coincidence(same_key, ALPHABET=ALPHABET)/period
+        deviations.append(abs(ioc - BASE_IOC))
+
+    print(deviations)
+    return deviations.index(min(deviations)) + 1
 
 
 KEY = "caesar"
@@ -36,6 +38,6 @@ pt = "this is some random english text, which was apparently not long enough but
 
 ct = cipher.encrypt(pt)
 
-print(find_period(ct))
+print(ct)
 
-print(index_of_coincidence(pt))
+print(find_period(ct), len(KEY))

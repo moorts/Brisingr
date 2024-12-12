@@ -1,5 +1,5 @@
-from ..Utils.numbers import *
-from decimal import *
+from brisingr.Utils.numbers import *
+from decimal import Decimal
 from Crypto.Util.number import bytes_to_long, long_to_bytes
 from typing import Optional, NamedTuple
 import math
