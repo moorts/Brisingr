@@ -29,6 +29,10 @@ class TwistedEdwardsCurve:
             raise NotImplementedError("Can only normalize if B is a quadratic residue (?).")
 
         if normalize:
+            # Computes factor s.t. B*scalar_factor**2 = 1 (mod p).
+            # This gives a birational map from
+            #   By^2 = x^3 + Ax^2 + x, to
+            #   (y')^2 = x^3 + Ax^2 + x, where y' = y/scalar_factor.
             self.scalar_factor = self.B.sqrt().inverse()
             self.normalize = True
 
@@ -39,6 +43,7 @@ class TwistedEdwardsCurve:
 
         self.curve = EllipticCurve(Fp, [a, b])
 
+        # Get morphisms to move points between weierstrass and montgomery models.
         self.montgomery_model, self.to_montgomery = self.curve.montgomery_model(morphism=True)
 
         if type(self.to_montgomery) == sage.schemes.elliptic_curves.weierstrass_morphism.WeierstrassIsomorphism:
@@ -62,6 +67,8 @@ class TwistedEdwardsCurve:
 
         if self.normalize:
             my = my / self.scalar_factor
+        else:
+            raise NotImplementedError("Nothing here.")
 
         if montgomery:
             return self.montgomery_model(mx, my)
