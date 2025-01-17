@@ -7,59 +7,9 @@ def xor(a, b):
 def oracle() -> tuple[bool, int]:
     raise Exception("Oracle not implemented")
 
-def padding_oracle_attack(oracle: Callable[[bytes], bool], ct: bytes, block_size: int):
-    num_blocks = len(ct) // block_size
-
-    assert num_blocks >= 2
-    assert len(ct) % block_size == 0
-
-    blocks = [ct[i*block_size:(i+1)*block_size] for i in range(num_blocks)]
-
-    pt = b""
-    decrypted_blocks = 0
-
-    for c0, c1 in zip(blocks, blocks[1:]):
-        print(f"[Status] Decrypting block {decrypted_blocks+1}.")
-        print("[Status] Progress: 0/16, Plaintext: ", end="\r", flush=True)
-
-        pt_block = b""
-
-        for byte in range(1, block_size + 1):
-            for candidate in range(256):
-                # if byte == 1 and candidate == c0[-1]:
-                #    continue
-                padding = bytes([len(pt_block) + 1] * len(pt_block))
-                c0_prime = c0[:-byte] + bytes([candidate]) + xor(pt_block, padding)
-
-                if oracle(c0_prime + c1):
-                    pad_value = len(pt_block) + 1
-                    # Found candidate that produces valid padding
-                    if byte == 1:
-                        # Calculate length of padding
-                        for i in range(2, 16):
-                            start = c0_prime[:-i]
-                            c0_prime = start + bytes([c0[-i] ^ 1]) + c0_prime[1-i:]
-                            if oracle(c0_prime + c1):
-                                # Byte 16 - i is not part of the padding
-                                pad_value = i - 1
-                                break
-                    print(pad_value)
-                    pt_block = bytes([pad_value ^ candidate]) + pt_block
-
-                    print(f"[Status] Progress: {len(pt_block)}/16, Plaintext: {xor(pt_block, c0[-byte:])}", end="\r", flush=True)
-                    break
-            else:
-                print("WTF")
-        print(f"[Status] Progress: 16/16, Plaintext: {xor(pt_block, c0)}")
-        print(xor(pt_block, c0))
-
-        pt += xor(pt_block, c0)
-        decrypted_blocks += 1
-    return pt
-
 
 class PaddingOracleAttack:
-    def __init__(self, oracle, ct: bytes, block_size: int, pt_alphabet=None):
+    def __init__(self, oracle, block_size: int, pt_alphabet=None):
         """Initialize the attack.
 
         Args:
@@ -69,18 +19,10 @@ class PaddingOracleAttack:
         self.oracle = oracle
         self.block_size = block_size
 
-        self.num_blocks = len(ct) // self.block_size
-
-        assert self.num_blocks >= 2
-        assert len(ct) % self.block_size == 0
-
-        self.blocks = [
-            ct[i*self.block_size : (i+1)*self.block_size]
-            for i in range(self.num_blocks)
-        ]
-
-        self.ct = ct
         self.pt = b""
+
+        # Store DEC(k, self.blocks[i])
+        self.decrypted_blocks = []
 
         self.current_block = 1
 
@@ -89,26 +31,60 @@ class PaddingOracleAttack:
         # Initialize telemetry.
         self.oracle_calls = 0
         self.decrypted_bytes = 0
-        self.decrypted_blocks = 0
 
-    def decrypt(self) -> bytes:
-        """Execute the attack.
-        """
+    def decrypt(self, ct: bytes) -> bytes:
+        """Execute the attack."""
+        assert len(ct) % self.block_size == 0
 
-        for i in range(self.num_blocks - 1):
-            self.log(f"Begin decrypting block {i}.")
-            self.pt += self.decrypt_block(i)
+        num_blocks = len(ct) // self.block_size
+        assert num_blocks >= 2 # IV is required.
+
+        blocks = [
+            ct[i*self.block_size : (i+1)*self.block_size]
+            for i in range(num_blocks)
+        ]
+
+        block_idx = 0
+        for (IV, ct) in zip(blocks, blocks[1:]):
+            final_block = block_idx == num_blocks - 1
+
+            self.log(f"Begin decrypting block {block_idx}.")
+            self.pt += self.decrypt_block(IV, ct, final_block=final_block)
             self.log("")
-            self.current_block += 1
+            block_idx += 1
 
         return unpad(self.pt, self.block_size)
 
-    def decrypt_block(self, i) -> bytes:
-        """Decrypts plaintext block i."""
-        self.IV = self.blocks[i]
-        self.C = self.blocks[i+1]
+    def encrypt(self, pt: bytes) -> bytes:
+        """Encrypt an arbitrary plaintext."""
+        assert len(pt) % self.block_size == 0
 
-        # DEC(k, iv=self.IV, ct=self.C)
+        num_blocks = len(pt) // self.block_size
+        blocks = [
+            pt[i:i+self.block_size]
+            for i in range(0, len(pt), self.block_size)
+        ]
+
+        # Goes from back to front.
+        # Final block
+        ct = b"\xff" * self.block_size
+        dummy_iv = b"\x00" * self.block_size
+
+        for block in blocks[::-1]:
+            ct_block = ct[:self.block_size]
+            dec = self.decrypt_block(dummy_iv, ct_block)
+
+            ct = xor(block, dec) + ct
+
+        return ct
+
+
+    def decrypt_block(self, iv, block, final_block=False) -> bytes:
+        """Decrypts plaintext block i."""
+        self.IV = iv
+        self.C = block
+
+        # DEC(k, ct=self.C)
         decrypted = b""
         # Plaintext block
         pt_block = b""
@@ -123,7 +99,7 @@ class PaddingOracleAttack:
             padding = bytes([self.pad_value for _ in range(len(decrypted))])
             suffix = xor(decrypted, padding)
 
-            for candidate in self.get_candidate_bytes():
+            for candidate in self.get_candidate_bytes(final_block):
                 IV_prime = prefix + bytes([candidate]) + suffix
 
                 is_valid_padding, queries = self.oracle(IV_prime + self.C)
@@ -152,9 +128,9 @@ class PaddingOracleAttack:
                 self.log(f"No valid candidate for byte {self.byte}.")
                 return pt_block
 
-        return pt_block
-                    
+        self.decrypted_blocks.append(decrypted)
 
+        return pt_block
 
     def resolve_first_byte(self, candidate):
         """The first decrypted byte (last byte of a block)
@@ -179,7 +155,7 @@ class PaddingOracleAttack:
         # I think this is unreachable.
         return self.block_size
 
-    def get_candidate_bytes(self):
+    def get_candidate_bytes(self, final_block: bool):
         """Compute possible bytes.
 
         Recall that:
@@ -190,7 +166,7 @@ class PaddingOracleAttack:
 
         pt_alphabet = self.pt_alphabet
 
-        if self.current_block == self.num_blocks - 1:
+        if final_block:
             # Last block can contain padding.
             pt_alphabet += bytes([i for i in range(self.block_size)])
 

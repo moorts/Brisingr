@@ -1,4 +1,4 @@
-from padding_oracle_attack import padding_oracle_attack, PaddingOracleAttack
+from padding_oracle_attack import PaddingOracleAttack
 from Crypto.Util.Padding import pad, unpad
 from Crypto.Cipher import AES
 import os
@@ -7,7 +7,6 @@ class MockServer:
     def __init__(self):
         self.key = os.urandom(16)
         self.plaintext = b"flag{this_is_a_very_very_legit_flag}"
-        # self.plaintext = b"flag{this_is_a_very_legit_flag}"
 
     def get_ct(self):
         iv = os.urandom(16)
@@ -41,8 +40,10 @@ def oracle(ct) -> tuple[bool, int]:
     return server.check_padding(ct.hex()), 1
 
 
-# print(padding_oracle_attack(oracle, ct, 16))
-plaintext = b"flag{this_is_a_very_very_legit_flag}"
+pt = pad(b"hello there general kenobi! you're shorter than expected", 16)
 pt_alphabet = b"abcdefghijklmnopqrstuvwxyz{}_" + bytes(range(16))
-print(PaddingOracleAttack(oracle, ct, 16, pt_alphabet=plaintext).decrypt())
+attack = PaddingOracleAttack(oracle, 16)
 
+ct = attack.encrypt(pt)
+
+print(attack.decrypt(ct))
