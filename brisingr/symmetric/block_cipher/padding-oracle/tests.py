@@ -33,17 +33,26 @@ class MockServer:
 
         return good
 
-server = MockServer()
-ct = bytes.fromhex(server.get_ct())
+def randomized_test():
+    import random
 
-def oracle(ct) -> tuple[bool, int]:
-    return server.check_padding(ct.hex()), 1
+    server = MockServer()
+    ct = bytes.fromhex(server.get_ct())
 
+    def oracle(ct) -> tuple[bool, int]:
+        return server.check_padding(ct.hex()), 1
 
-pt = pad(b"hello there general kenobi! you're shorter than expected", 16)
-pt_alphabet = b"abcdefghijklmnopqrstuvwxyz{}_" + bytes(range(16))
-attack = PaddingOracleAttack(oracle, 16)
+    pt_alphabet = b"abcdefghijklmnopqrstuvwxyz{}_"
+    pt_len = random.randint(0, 50)
 
-ct = attack.encrypt(pt)
+    pt = bytes(random.choices(pt_alphabet, k=pt_len))
 
-print(attack.decrypt(ct))
+    attack = PaddingOracleAttack(oracle, 16, verbose=False)
+
+    ct = attack.encrypt(pt)
+
+    if not (dec := attack.decrypt(ct)) == pt:
+        print(dec, pt, len(pt), len(pt) % 16)
+
+for _ in range(100):
+    randomized_test()

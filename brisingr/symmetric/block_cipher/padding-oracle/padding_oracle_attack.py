@@ -1,5 +1,5 @@
 from typing import Callable, Self
-from Crypto.Util.Padding import unpad
+from Crypto.Util.Padding import unpad, pad
 
 def xor(a, b):
     return bytes([x ^ y for x, y in zip(a, b)])
@@ -9,15 +9,15 @@ def oracle() -> tuple[bool, int]:
 
 
 class PaddingOracleAttack:
-    def __init__(self, oracle, block_size: int, pt_alphabet=None):
+    def __init__(self, oracle, block_size: int, verbose=False):
         """Initialize the attack.
 
         Args:
-        - oracle: 
-        - ct: Ciphertext. ct = IV || ciphertext
+        - oracle: function that implements the oracle calls
         """
         self.oracle = oracle
         self.block_size = block_size
+        self.verbose = verbose
 
         self.pt = b""
 
@@ -26,18 +26,24 @@ class PaddingOracleAttack:
 
         self.current_block = 1
 
-        self.pt_alphabet = pt_alphabet
+        self.pt_alphabet = None
         
         # Initialize telemetry.
         self.oracle_calls = 0
         self.decrypted_bytes = 0
 
-    def decrypt(self, ct: bytes) -> bytes:
-        """Execute the attack."""
+    def decrypt(self, ct: bytes, pt_alphabet=None) -> bytes:
+        """Decrypt an arbitrary ciphertext.
+
+        Args:
+        - ct: Ciphertext. ct = IV || ciphertext
+        """
         assert len(ct) % self.block_size == 0
+        assert len(ct) // self.block_size >= 2
+
+        self.pt_alphabet = pt_alphabet
 
         num_blocks = len(ct) // self.block_size
-        assert num_blocks >= 2 # IV is required.
 
         blocks = [
             ct[i*self.block_size : (i+1)*self.block_size]
@@ -53,11 +59,14 @@ class PaddingOracleAttack:
             self.log("")
             block_idx += 1
 
-        return unpad(self.pt, self.block_size)
+        try:
+            return unpad(self.pt, self.block_size)
+        except:
+            return self.pt
 
     def encrypt(self, pt: bytes) -> bytes:
         """Encrypt an arbitrary plaintext."""
-        assert len(pt) % self.block_size == 0
+        pt = pad(pt, self.block_size) # Add padding
 
         num_blocks = len(pt) // self.block_size
         blocks = [
@@ -137,7 +146,7 @@ class PaddingOracleAttack:
         needs special treatment.
         """
 
-        for i in range(2, self.block_size):
+        for i in range(2, self.block_size + 1):
             prefix = self.IV[:-i]
 
             suffix = self.IV[1-i:-1] + bytes([candidate])
@@ -152,7 +161,7 @@ class PaddingOracleAttack:
                 # Found first byte that is not part of the padding.
                 return i - 1
 
-        # I think this is unreachable.
+        # Entire padding block, i.e. len(pt) % 16 == 0
         return self.block_size
 
     def get_candidate_bytes(self, final_block: bool):
@@ -179,5 +188,6 @@ class PaddingOracleAttack:
         return candidate_bytes
 
     def log(self, msg, end="\n"):
-        print(f"[Attack] {msg}", end=end)
+        if self.verbose:
+            print(f"[Attack] {msg}", end=end)
 
